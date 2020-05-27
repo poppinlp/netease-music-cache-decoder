@@ -9,6 +9,8 @@
     "ut": "",
     "test": ""
   },
+  "files": [
+  ],
   "husky": {
     "hooks": {
       "pre-commit": "npm test"
