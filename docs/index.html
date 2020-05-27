@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover,user-scalable=no">
+  <meta name="application-name" content="Netease Cloud Music Cache Decoder">
+  <meta name="keywords" content="netease-music,cache,decoder">
+  <meta name="description" content="把网易云音乐的本地缓存还原为 mp3 文件">
+  <title>Netease Cloud Music Cache Decoder - 张小猪</title>
+  <link rel="icon" type="image/jpg" href="https://pic1.zhimg.com/v2-9a12ac951674d3568caa4acb5783e308_xll.jpg">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>网易云音乐缓存在线解码</h1>
+  <section>
+    <form class="block">
+      <fieldset>
+        <legend>选择本地缓存文件</legend>
+        <input type="file" name="song" accept=".uc" />
+      </fieldset>
+      <button type="submit">开始解码</button>
+    </form>
+    <p id="msg"></p>
+  </section>
+  <section>
+    <p>默认缓存目录</p>
+    <ul>
+      <li>Windows 默认为 C:\Users\你的用户名\AppData\Local\Netease\CloudMusic\Cache\Cache</li>
+      <li>MacOS 默认为 /Users/你的用户名/Library/Containers/com.netease.163music/Data/Caches/online_play_cache</li>
+      <li>Linux 默认为 NEED_HELP</li>
+    </ul>
+  </section>
+  <section>
+    <p>在线解码目前不支持根据歌曲信息自动利用歌名和歌手名作为解码后的文件名。</p>
+    <p>其实已经做好了，不过 serverless 的流量要收费...所以先关掉了...</p>
+    <p>有需要的小伙伴可以用 nodejs 的 module，或者等我稍后实现一个桌面软件。</p>
+  </section>
+  <section>
+    <p>如果遇到任何使用问题，请移步 <a href="https://github.com/poppinlp/netease-music-cache-decoder" target="_blank">github repo</a>
+      提 issue 即可。</p>
+    <p>欢迎 STAR，欢迎 PR :)</p>
+  </section>
+  <script>
+    const form = document.forms[0];
+    const msgEle = document.getElementById('msg');
+
+    const BAZINGA = 0xa3;
+
+    if (!Promise) {
+      showError('请不要使用低版本的 IE 浏览器，因为小猪比较懒~');
+    } else {
+      form.addEventListener('submit', onSubmit);
+    }
+
+    function showError(msg) {
+      msgEle.innerText = msg;
+      msgEle.classList.add('error');
+      msgEle.classList.remove('succ');
+    }
+
+    function showSucc(msg) {
+      msgEle.innerText = msg;
+      msgEle.classList.add('succ');
+      msgEle.classList.remove('error');
+    }
+
+    function decode(buffer) {
+      const view = new Uint8Array(buffer);
+      for (let i = 0; i < view.length; ++i) {
+        view[i] ^= BAZINGA;
+      }
+      return view;
+    }
+
+    function onSubmit(e) {
+      e.preventDefault();
+      showError('');
+
+      try {
+        const data = new FormData(form);
+        const song = data.get('song');
+        if (song.size === 0) {
+          throw new Error('请选择本地缓存文件');
+        }
+        const reader = new FileReader();
+
+        reader.onload = e => {
+          const buffer = decode(e.target.result);
+          const anchor = document.createElement('a');
+          anchor.href = URL.createObjectURL(new Blob([buffer], {
+            type: 'audio/mpeg'
+          }));
+          anchor.download = song.name.slice(0, song.name.indexOf('.')) + '.mp3';
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          showSucc('解码成功，开始下载！', 'succ');
+        }
+        reader.onerror = e => {
+          throw new Error(e.message);
+        }
+
+        reader.readAsArrayBuffer(song);
+      } catch (err) {
+        showError(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+
+</html>
