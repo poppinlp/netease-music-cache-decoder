@@ -25,7 +25,7 @@
     "decoder"
   ],
   "author": "PoppinL <poppinlp@gmail.com>",
-  "license": "GNU-3.0",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/poppinlp/netease-music-cache-decoder/issues"
   },
