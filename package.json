@@ -1,6 +1,6 @@
 {
   "name": "netease-music-cache-decoder",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The decoder for netease music to convert cache file to origin mp3.",
   "main": "src/index.js",
   "scripts": {
