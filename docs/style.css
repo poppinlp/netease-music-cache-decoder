@@ -6,7 +6,7 @@ html {
   background-size: cover;
 }
 
-body {
+main {
   max-width: 800px;
   width: 90vw;
   margin: 100px auto;
@@ -41,4 +41,26 @@ button {
 
 .succ {
   color: green;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.dropzone {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dropzone p {
+  font-size: 28px;
+  color: #fff;
 }

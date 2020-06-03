@@ -14,37 +14,49 @@
 </head>
 
 <body>
-  <h1>网易云音乐缓存在线解码</h1>
-  <section>
-    <form class="block">
-      <fieldset>
-        <legend>选择本地缓存文件</legend>
-        <input type="file" name="song" accept=".uc" />
-      </fieldset>
-      <button type="submit">开始解码</button>
-    </form>
-    <p id="msg"></p>
-  </section>
-  <section>
-    <p>默认缓存目录</p>
-    <ul>
-      <li>Windows 默认为 C:\Users\你的用户名\AppData\Local\Netease\CloudMusic\Cache\Cache</li>
-      <li>MacOS 默认为 /Users/你的用户名/Library/Containers/com.netease.163music/Data/Caches/online_play_cache</li>
-      <li>Linux 默认为 NEED_HELP</li>
-    </ul>
-  </section>
-  <section>
-    <p>在线解码目前不支持根据歌曲信息自动利用歌名和歌手名作为解码后的文件名。</p>
-    <p>其实已经做好了，不过 serverless 的流量要收费...所以先关掉了...</p>
-    <p>有需要的小伙伴可以用 nodejs 的 module，或者等我稍后实现一个桌面软件。</p>
-  </section>
-  <section>
-    <p>如果遇到任何使用问题，请移步 <a href="https://github.com/poppinlp/netease-music-cache-decoder" target="_blank">github repo</a>
-      提 issue 即可。</p>
-    <p>欢迎 STAR，欢迎 PR :)</p>
-  </section>
+  <main>
+    <h1>网易云音乐缓存在线解码</h1>
+    <section>
+      <form class="block">
+        <fieldset>
+          <legend>选择本地缓存文件（支持拖拽）</legend>
+          <input type="file" name="song" accept=".uc" />
+        </fieldset>
+        <button type="submit">开始解码</button>
+      </form>
+      <p id="msg"></p>
+    </section>
+    <section>
+      <p>默认缓存目录：</p>
+      <ul>
+        <li>Windows 默认为 C:\Users\你的用户名\AppData\Local\Netease\CloudMusic\Cache\Cache</li>
+        <li>MacOS 默认为 /Users/你的用户名/Library/Containers/com.netease.163music/Data/Caches/online_play_cache</li>
+        <li>Linux 默认为 NEED_HELP</li>
+      </ul>
+    </section>
+    <section>
+      <p>支持拖直接拽缓存文件。</p>
+      <p>支持批量拖拽，并且会忽略所有的非 .uc 结尾的文件。</p>
+    </section>
+    <section>
+      <p>在线解码目前不支持根据歌曲信息自动利用歌名和歌手名作为解码后的文件名。</p>
+      <p>其实已经做好了，不过 serverless 的流量要收费...所以先关掉了...</p>
+      <p>有需要的小伙伴可以用 nodejs 的 module，或者等我稍后实现一个桌面软件。</p>
+    </section>
+    <section>
+      <p>如果遇到任何使用问题，请移步 <a href="https://github.com/poppinlp/netease-music-cache-decoder" target="_blank">github
+          repo</a>
+        提 issue 即可。</p>
+      <p>欢迎 STAR，欢迎 PR :)</p>
+    </section>
+  </main>
+  <div id="dropzone" class="dropzone hidden">
+    <p>拖放缓存文件便可触发解码</p>
+  </div>
+
   <script>
     const form = document.forms[0];
+    const dropzone = document.getElementById('dropzone');
     const msgEle = document.getElementById('msg');
 
     const BAZINGA = 0xa3;
@@ -53,6 +65,40 @@
       showError('请不要使用低版本的 IE 浏览器，因为小猪比较懒~');
     } else {
       form.addEventListener('submit', onSubmit);
+      document.addEventListener('dragenter', onDragEnter);
+      document.addEventListener('dragover', onDragOver);
+      document.addEventListener('dragleave', onDragLeave);
+      document.addEventListener('drop', onDrop);
+    }
+
+    function onDragEnter(e) {
+      e.preventDefault();
+      !e.fromElement && dropzone.classList.remove('hidden');
+    }
+    function onDragOver(e) {
+      e.preventDefault();
+    }
+    function onDragLeave(e) {
+      e.preventDefault();
+      !e.clientX && !e.clientY && dropzone.classList.add('hidden');
+    }
+    function onDrop(e) {
+      e.preventDefault();
+      for (const file of e.dataTransfer.files) {
+        file.name.endsWith('.uc') && decodeFile(file);
+      }
+      dropzone.classList.add('hidden');
+    }
+
+    function onSubmit(e) {
+      e.preventDefault();
+      showError('');
+
+      const song = new FormData(form).get('song');
+      if (!song || !song.size) {
+        return showError('请选择本地缓存文件');
+      }
+      decodeFile(song);
     }
 
     function showError(msg) {
@@ -75,38 +121,26 @@
       return view;
     }
 
-    function onSubmit(e) {
-      e.preventDefault();
-      showError('');
+    function decodeFile(file) {
+      const reader = new FileReader();
 
-      try {
-        const data = new FormData(form);
-        const song = data.get('song');
-        if (song.size === 0) {
-          throw new Error('请选择本地缓存文件');
-        }
-        const reader = new FileReader();
-
-        reader.onload = e => {
-          const buffer = decode(e.target.result);
-          const anchor = document.createElement('a');
-          anchor.href = URL.createObjectURL(new Blob([buffer], {
-            type: 'audio/mpeg'
-          }));
-          anchor.download = song.name.slice(0, song.name.indexOf('.')) + '.mp3';
-          document.body.appendChild(anchor);
-          anchor.click();
-          anchor.remove();
-          showSucc('解码成功，开始下载！', 'succ');
-        }
-        reader.onerror = e => {
-          throw new Error(e.message);
-        }
-
-        reader.readAsArrayBuffer(song);
-      } catch (err) {
-        showError(err.message, 'error');
+      reader.onload = e => {
+        const buffer = decode(e.target.result);
+        const anchor = document.createElement('a');
+        anchor.href = URL.createObjectURL(new Blob([buffer], {
+          type: 'audio/mpeg'
+        }));
+        anchor.download = file.name.slice(0, file.name.indexOf('.')) + '.mp3';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        showSucc('解码成功，开始下载！');
       }
+      reader.onerror = e => {
+        showError(e.message);
+      }
+
+      reader.readAsArrayBuffer(file);
     }
   </script>
 </body>
